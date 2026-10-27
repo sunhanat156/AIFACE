@@ -29,7 +29,9 @@ a = Analysis(
     datas=datas,
     hiddenimports=hiddenimports,
     excludes=["torch", "tensorflow", "matplotlib", "pandas", "tkinter", "IPython",
-              "mediapipe", "face_recognition", "dlib", "jupyter", "notebook"],
+              "mediapipe", "face_recognition", "dlib", "jupyter", "notebook",
+              "PySide6", "shiboken6", "PyQt5", "PyQt6", "MetaTrader5", "pytest",
+              "sphinx", "docutils"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)
