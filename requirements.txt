@@ -1,0 +1,11 @@
+fastapi
+uvicorn[standard]
+sqlalchemy
+pymysql
+insightface
+onnxruntime-directml
+opencv-python
+requests
+python-multipart
+jinja2
+pygrabber

@@ -1,0 +1,17 @@
+# Personal data — real people's faces and logs never go to GitHub
+faceguard*.db
+captured_faces/
+config.json
+
+# Build output
+build/
+dist/
+release/
+__pycache__/
+*.pyc
+
+# Local leftovers
+*.bak
+.vscode/
+_dlib_pybind11*.pyd
+/ai_processor.py

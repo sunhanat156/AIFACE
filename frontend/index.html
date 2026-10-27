@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIFACE — AI Face Recognition System</title>
+    <meta name="description" content="AI-powered face recognition and identification system with real-time monitoring and multi-angle training.">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css?v=20261027">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <nav class="sidebar glass-panel">
+            <div class="logo">
+                <i class="fa-solid fa-shield-halved"></i>
+                <h2>AIFACE</h2>
+            </div>
+            <ul class="nav-links">
+                <li class="active" data-target="dashboard"><i class="fa-solid fa-house"></i> Dashboard</li>
+                <li data-target="checkin"><i class="fa-solid fa-clock"></i> Check-In</li>
+                <li data-target="users"><i class="fa-solid fa-users"></i> Users</li>
+                <li data-target="logs"><i class="fa-solid fa-list"></i> Access Logs</li>
+            </ul>
+            <div class="sidebar-footer">
+                <p>Status: <span class="status-indicator online">● Online</span></p>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="main-content">
+
+            <!-- ═══ Dashboard ═══ -->
+            <section id="dashboard" class="view active-view">
+                <header>
+                    <div>
+                        <h1>Dashboard</h1>
+                        <p class="subtitle">Real-time AI Face Recognition & Identification</p>
+                    </div>
+                </header>
+                <div class="dashboard-grid">
+                    <div class="video-container glass-panel">
+                        <div class="video-header">
+                            <h3><i class="fa-solid fa-video"></i> Live Camera Feed</h3>
+                            <div class="video-header-actions">
+                                <span class="live-badge" id="camera-badge"><i class="fa-solid fa-circle"></i> LIVE</span>
+                                <select id="camera-select" class="camera-select" onchange="selectCamera(this.value)" title="เลือกกล้อง / Select camera">
+                                    <option value="">กำลังค้นหากล้อง...</option>
+                                </select>
+                                <button class="btn-ghost" onclick="loadCameraList(true)" title="ค้นหากล้องใหม่ (USB webcam)">
+                                    <i class="fa-solid fa-magnifying-glass"></i>
+                                </button>
+                                <button class="btn-ghost" onclick="restartCamera()" title="Reconnect camera">
+                                    <i class="fa-solid fa-rotate"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="video-frame">
+                            <img id="video-stream" src="/api/video_feed" alt="Camera Stream" />
+                            <img id="scan-snapshot" class="scan-snapshot" alt="Scan result" />
+                            <div id="access-overlay" class="access-overlay">
+                                <div class="access-overlay-content">
+                                    <div class="access-icon"><i class="fa-solid fa-circle-check"></i></div>
+                                    <h2 class="access-title">ACCESS GRANTED</h2>
+                                    <p class="access-name"></p>
+                                    <p class="access-confidence"></p>
+                                    <p class="access-sub">เชิญเข้าห้องได้เลย · You may enter</p>
+                                </div>
+                            </div>
+                        </div>
+                        <p id="camera-error" class="camera-error" style="display:none;"></p>
+                        <button type="button" class="btn-primary btn-enter-scan" id="btn-enter-scan" onclick="scanEntry()">
+                            <i class="fa-solid fa-door-open"></i> กดเพื่อสแกนเข้าห้อง
+                        </button>
+                    </div>
+                    <div class="side-panel">
+                        <div class="stats-row">
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon"><i class="fa-solid fa-user-check"></i></div>
+                                <div class="stat-info">
+                                    <h3>Registered</h3>
+                                    <p id="stat-users">0</p>
+                                </div>
+                            </div>
+                            <div class="stat-card glass-panel">
+                                <div class="stat-icon warning"><i class="fa-solid fa-user-xmark"></i></div>
+                                <div class="stat-info">
+                                    <h3>Unknowns</h3>
+                                    <p id="stat-unknowns">0</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="activity-feed glass-panel">
+                            <div class="activity-header">
+                                <h3><i class="fa-solid fa-bolt"></i> Live Activity</h3>
+                            </div>
+                            <div id="activity-list" class="activity-list">
+                                <p class="no-activity">Waiting for detections...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ Check-In (self-service attendance) ═══ -->
+            <section id="checkin" class="view">
+                <header>
+                    <div>
+                        <h1>Check-In</h1>
+                        <p class="subtitle">Self-service clock in/out — pick your name, then scan your face to confirm</p>
+                    </div>
+                </header>
+                <div class="checkin-grid">
+                    <div class="checkin-panel glass-panel">
+                        <div class="form-group">
+                            <label>1. Select your name (login)</label>
+                            <select id="checkin-user"><option value="">— Choose your name —</option></select>
+                        </div>
+                        <div id="checkin-last-status" class="checkin-last-status" style="display:none;"></div>
+                        <div class="form-group">
+                            <label>2. Look at the camera and scan</label>
+                            <div class="checkin-camera-preview">
+                                <img id="checkin-preview-img" src="" alt="" style="display:none;" />
+                                <div id="checkin-preview-placeholder" class="log-card-placeholder"><i class="fa-solid fa-camera"></i></div>
+                            </div>
+                        </div>
+                        <div class="checkin-actions">
+                            <button type="button" class="btn-primary" id="btn-checkin-in" onclick="doCheckin('IN')">
+                                <i class="fa-solid fa-right-to-bracket"></i> Clock In
+                            </button>
+                            <button type="button" class="btn-secondary" id="btn-checkin-out" onclick="doCheckin('OUT')">
+                                <i class="fa-solid fa-right-from-bracket"></i> Clock Out
+                            </button>
+                        </div>
+                        <p class="capture-hint">Your browser may ask for location permission — GPS is recorded with each check-in/out.</p>
+                        <div id="checkin-message" class="reg-message"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ═══ Users ═══ -->
+            <section id="users" class="view">
+                <header>
+                    <h1>User Management</h1>
+                    <button class="btn-primary" onclick="openRegisterModal()"><i class="fa-solid fa-user-plus"></i> Register New User</button>
+                </header>
+                <div class="info-banner glass-panel">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <span>Tip: Upload <strong>multiple photos</strong> from different angles for maximum recognition accuracy. Each photo is automatically augmented (flipped, rotated, brightness adjusted) to create many face vectors.</span>
+                </div>
+                <div class="table-container glass-panel">
+                    <table id="users-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Face Vectors</th>
+                                <th>Registered At</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- ═══ Logs ═══ -->
+            <section id="logs" class="view">
+                <header>
+                    <div>
+                        <h1>Access Logs</h1>
+                        <p class="subtitle">Face detection history with captured snapshots</p>
+                    </div>
+                    <div class="log-actions">
+                        <input type="search" id="logs-name-search" class="log-search" placeholder="ค้นหาชื่อ..." oninput="loadLogsDebounced()">
+                        <input type="date" id="logs-date-from" class="log-search" title="ตั้งแต่วันที่" onchange="loadLogs()">
+                        <input type="date" id="logs-date-to" class="log-search" title="ถึงวันที่" onchange="loadLogs()">
+                        <button class="btn-danger-outline" onclick="clearLogSearch()" title="ล้างการค้นหา"><i class="fa-solid fa-xmark"></i> ล้าง</button>
+                        <select id="logs-department-filter" onchange="loadLogs()">
+                            <option value="">All Departments</option>
+                        </select>
+                        <button class="btn-danger-outline" onclick="deleteUnknownLogs()"><i class="fa-solid fa-broom"></i> Clear Unknown Logs</button>
+                        <button class="btn-danger-outline" onclick="deleteTodayLogs()"><i class="fa-solid fa-calendar-xmark"></i> Clear Today's Logs</button>
+                    </div>
+                </header>
+                <div class="logs-grid" id="logs-grid">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content glass-panel">
+            <span class="close-btn" onclick="closeRegisterModal()">&times;</span>
+            <h2><i class="fa-solid fa-user-plus"></i> Register New User</h2>
+            <form id="register-form">
+                <div class="form-group">
+                    <label>Full Name</label>
+                    <input type="text" id="reg-name" required placeholder="e.g. John Doe">
+                </div>
+                <div class="form-group">
+                    <label>Department</label>
+                    <input type="text" id="reg-department" placeholder="e.g. IT, HR, Sales">
+                </div>
+                <div class="form-group">
+                    <label>Face Photos (more angles = better accuracy)</label>
+                    <div class="capture-row">
+                        <button type="button" class="btn-secondary" id="btn-capture" onclick="captureFromCamera()">
+                            <i class="fa-solid fa-camera"></i> Capture from Camera
+                        </button>
+                        <button type="button" class="btn-secondary" id="btn-burst" onclick="captureBurst()">
+                            <i class="fa-solid fa-bolt"></i> Auto Capture ×5
+                        </button>
+                        <button type="button" class="btn-ghost" onclick="clearCaptures()">
+                            <i class="fa-solid fa-eraser"></i> Clear
+                        </button>
+                    </div>
+                    <p class="capture-hint">Look at the camera and turn your head slightly between shots — or upload photo files below.</p>
+                    <input type="file" id="reg-image" accept="image/*" multiple>
+                    <div id="reg-preview" class="reg-preview"></div>
+                    <p class="capture-count" id="reg-count">0 photo(s) ready</p>
+                </div>
+                <div id="reg-progress" class="reg-progress" style="display:none;">
+                    <div class="progress-bar"><div class="progress-fill" id="reg-progress-fill"></div></div>
+                    <p id="reg-progress-text">Processing...</p>
+                </div>
+                <button type="submit" class="btn-primary" id="reg-submit-btn"><i class="fa-solid fa-check"></i> Register</button>
+                <div id="reg-message" class="reg-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Image Preview Modal -->
+    <div id="image-modal" class="modal" onclick="closeImageModal()">
+        <div class="image-modal-content">
+            <img id="image-modal-img" src="" alt="Face Capture" />
+        </div>
+    </div>
+
+    <script src="/js/main.js?v=20261027"></script>
+</body>
+</html>
