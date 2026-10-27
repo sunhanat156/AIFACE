@@ -2,7 +2,7 @@
 # One-folder build (dist/AIFACE/): a one-file .exe would unpack ~500 MB on
 # every launch. The face models are bundled so it works offline.
 import os
-from PyInstaller.utils.hooks import collect_all, collect_submodules
+from PyInstaller.utils.hooks import collect_all, collect_data_files, collect_submodules
 
 MODELS = os.path.join(os.path.expanduser("~"), ".insightface", "models", "buffalo_l")
 
@@ -16,11 +16,16 @@ datas = [
 binaries = []
 hiddenimports = collect_submodules("uvicorn") + collect_submodules("backend") + ["multipart", "python_multipart"]
 
-for pkg in ("onnxruntime", "insightface"):
-    d, b, h = collect_all(pkg)
-    datas += d
-    binaries += b
-    hiddenimports += h
+d, b, h = collect_all("onnxruntime")
+datas += d
+binaries += b
+hiddenimports += h
+
+# insightface 2.x also ships a GUI/"privateframe" app that drags in jax,
+# transformers, pyarrow, av... (~600 MB). AIFACE only uses the core API.
+_UNUSED = ("insightface.gui", "insightface.app.privateframe", "insightface.commands")
+hiddenimports += collect_submodules("insightface", filter=lambda n: not n.startswith(_UNUSED))
+datas += collect_data_files("insightface", excludes=["gui/**", "app/privateframe/**", "models/**"])
 
 a = Analysis(
     ["launcher.py"],
@@ -31,7 +36,9 @@ a = Analysis(
     excludes=["torch", "tensorflow", "matplotlib", "pandas", "tkinter", "IPython",
               "mediapipe", "face_recognition", "dlib", "jupyter", "notebook",
               "PySide6", "shiboken6", "PyQt5", "PyQt6", "MetaTrader5", "pytest",
-              "sphinx", "docutils"],
+              "sphinx", "docutils", "jax", "jaxlib", "transformers", "pyarrow", "av",
+              "pythainlp", "numba", "llvmlite", "insightface.gui",
+              "insightface.app.privateframe", "insightface.commands"],
     noarchive=False,
 )
 pyz = PYZ(a.pure)
